@@ -1041,9 +1041,13 @@ getmouse(NSEvent *e)
 			if(m & NSAlternateKeyMask){
 				abortcompose();
 				b = 2;
-			}else
-			if(m & NSCommandKeyMask)
+			}else if(m & NSCommandKeyMask)
 				b = 4;
+			else if(m & NSControlKeyMask){
+				in.mbuttons = 2;
+				sendmouse();
+				b = 1;
+			}
 		}
 		in.mbuttons = b;
 		break;
