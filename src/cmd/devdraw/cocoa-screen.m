@@ -922,6 +922,8 @@ getkeyboard(NSEvent *e)
 	case NSFlagsChanged:
 		if(in.mbuttons || in.kbuttons){
 			in.kbuttons = 0;
+			if(m & NSControlKeyMask)
+				in.kbuttons |= 1;
 			if(m & NSAlternateKeyMask)
 				in.kbuttons |= 2;
 			if(m & NSCommandKeyMask)
@@ -1041,13 +1043,9 @@ getmouse(NSEvent *e)
 			if(m & NSAlternateKeyMask){
 				abortcompose();
 				b = 2;
-			}else if(m & NSCommandKeyMask)
+			}else
+			if(m & NSCommandKeyMask)
 				b = 4;
-			else if(m & NSControlKeyMask){
-				in.mbuttons = 2;
-				sendmouse();
-				b = 1;
-			}
 		}
 		in.mbuttons = b;
 		break;
