@@ -25,6 +25,41 @@ static char *skipquotemap[] = {
 	"Osaka",
 };
 
+enum {
+	Zero = 1<<0,
+	Tab = 1<<1,
+	SS01 = 1<<2,
+	SS02 = 1<<3,
+	SS03 = 1<<4,
+	SS04 = 1<<5,
+	SS05 = 1<<6,
+	SS12 = 1<<7,
+	SS14 = 1<<8,
+	SS17 = 1<<9,
+
+	Dquote = 1<<10,
+	Lnum = 1<<11,
+	Salt = 1<<12,
+};
+
+// Store a map of font features to use.
+static struct {
+	char *name;
+	int features;
+} featuremap[] = {
+	{"Vinkel", Dquote | Zero | Tab | SS01 | SS02 },
+	{"MetaPro", Zero | Tab | Lnum | SS01 },
+	{"Fago", Zero | Tab | Lnum },
+	{"Unit", Zero | Tab | Lnum },
+	{"Gintronic", Zero | Tab | Lnum | SS01 | SS02 },
+	{"Operator", Zero | Tab | Lnum },
+	{"Lucida", Zero },
+	{"Plex", Zero },
+	{"Ideal", Zero | Tab | Lnum },
+	{"Whitney", Zero | Tab | Lnum | SS12 | SS14 },
+	{"Fira", Zero | Tab | Lnum },
+};
+
 int
 mapUnicode(char *name, int i)
 {
@@ -41,6 +76,11 @@ mapUnicode(char *name, int i)
 		return 0x2019;
 	case '`':
 		return 0x2018;
+	case '"':
+	for(j=0; j<nelem(featuremap); j++) {
+		if(strstr(name, featuremap[j].name) && (featuremap[j].features & Dquote))
+			return 0x201d;
+	}
 	}
 	return i;
 }
@@ -108,7 +148,84 @@ static char *lines[] = {
 	"私はガラスを食べられます。それは私を傷つけません。",
 	"Aš galiu valgyti stiklą ir jis manęs nežeidžia",
 	"Môžem jesť sklo. Nezraní ma.",
+	"camel_Snake^case.",
 };
+
+static CTFontDescriptorRef
+fontfeature(CTFontDescriptorRef desc, CFStringRef feature, int value)
+{
+	CFNumberRef val = CFNumberCreate(CFAllocatorGetDefault(), kCFNumberIntType, &value);
+	CFTypeRef keys[] = { kCTFontOpenTypeFeatureTag, kCTFontOpenTypeFeatureValue };
+	CFTypeRef values[] = { feature, val };
+	CFDictionaryRef dict = CFDictionaryCreate(
+		CFAllocatorGetDefault(), keys, values, 2, 
+		&kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+	CFRelease(val);
+	
+	CFTypeRef settingsValues[] = { dict };
+	CFArrayRef featureSettings = CFArrayCreate(CFAllocatorGetDefault(), settingsValues, 1, &kCFTypeArrayCallBacks);
+	CFRelease(dict);
+	
+	CFTypeRef descriptorKeys[] = { kCTFontFeatureSettingsAttribute };
+	CFTypeRef descriptorValues[] = { featureSettings };
+	CFDictionaryRef descriptorAttrs =  CFDictionaryCreate(CFAllocatorGetDefault(), descriptorKeys, 
+		descriptorValues, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+	
+	CTFontDescriptorRef desc2 = CTFontDescriptorCreateCopyWithAttributes(desc, descriptorAttrs);
+	CFRelease(descriptorAttrs);
+	CFRelease(desc);
+	return desc2;	
+}
+
+static CTFontDescriptorRef
+fontfeatures(char *name, CTFontDescriptorRef desc) 
+{
+	int i;
+	CTFontDescriptorRef tmp;
+	// Set up OpenType Attributes
+	CFAllocatorRef defaultAllocator = CFAllocatorGetDefault();
+
+	int numberSpacing = kNumberSpacingType;
+	int numberSpacingType = kMonospacedNumbersSelector;
+
+	CFNumberRef numberSpacingId = CFNumberCreate(defaultAllocator, kCFNumberIntType, &numberSpacing);
+	CFNumberRef monospacedNumbersSelector = CFNumberCreate(defaultAllocator, kCFNumberIntType, &numberSpacingType);
+	tmp = desc;
+	desc = CTFontDescriptorCreateCopyWithFeature(desc, numberSpacingId, monospacedNumbersSelector);
+	CFRelease(tmp);
+	CFRelease(numberSpacingId);
+	CFRelease(monospacedNumbersSelector);
+
+	int features = 0;
+	for(i=0; i<nelem(featuremap); i++)
+		if(strstr(name, featuremap[i].name)){
+			features = featuremap[i].features;
+			break;
+		}
+	if(features & Zero)
+		desc = fontfeature(desc, CFSTR("zero"), 1);
+	if(features & SS01)
+		desc = fontfeature(desc, CFSTR("ss01"), 1);
+	if(features & SS02)
+		desc = fontfeature(desc, CFSTR("ss02"), 1);
+	if(features & SS03)
+		desc = fontfeature(desc, CFSTR("ss03"), 1);
+	if(features & SS04)
+		desc = fontfeature(desc, CFSTR("ss04"), 1);
+	if(features & SS05)
+		desc = fontfeature(desc, CFSTR("ss05"), 1);
+	if(features & SS12)
+		desc = fontfeature(desc, CFSTR("ss12"), 1);
+	if(features & SS14)
+		desc = fontfeature(desc, CFSTR("ss14"), 1);
+	if(features & SS17)
+		desc = fontfeature(desc, CFSTR("ss17"), 1);
+	if(features & Salt)
+		desc = fontfeature(desc, CFSTR("salt"), 1);
+	if(features & Lnum)
+		desc = fontfeature(desc, CFSTR("lnum"), 1);
+	return desc;
+}
 
 static void
 fontheight(XFont *f, int size, int *height, int *ascent)
@@ -126,8 +243,11 @@ fontheight(XFont *f, int size, int *height, int *ascent)
 	CFRelease(s);
 	if(desc == nil)
 		return;
+		
+	desc = fontfeatures(f->name, desc);
 	font = CTFontCreateWithFontDescriptor(desc, 0, nil);
 	CFRelease(desc);
+
 	if(font == nil)
 		return;
 
@@ -227,8 +347,11 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 	CFRelease(s);
 	if(desc == nil)
 		return nil;
+
+	desc = fontfeatures(name, desc);
 	font = CTFontCreateWithFontDescriptor(desc, 0, nil);
 	CFRelease(desc);
+
 	if(font == nil)
 		return nil;
 	
