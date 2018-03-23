@@ -65,7 +65,7 @@ mapUnicode(char *name, int i)
 {
 	int j;
 
-	if(0xd800 <= i && i < 0xe0000) // surrogate pairs, will crash OS X libraries!
+	if(0xd800 <= i && i < 0xe000) // surrogate pairs, will crash OS X libraries!
 		return 0xfffd;
 	for(j=0; j<nelem(skipquotemap); j++) {
 		if(strstr(name, skipquotemap[j]))
