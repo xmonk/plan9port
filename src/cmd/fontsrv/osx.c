@@ -144,6 +144,7 @@ static char *lines[] = {
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	"abcdefghijklmnopqrstuvwxyz",
 	"g",
+	"┌┬┐├┼┤└┴┘│─",
 	"ὕαλον ϕαγεῖν δύναμαι· τοῦτο οὔ με βλάπτει.",
 	"私はガラスを食べられます。それは私を傷つけません。",
 	"Aš galiu valgyti stiklą ir jis manęs nežeidžia",
@@ -357,7 +358,7 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 	
 	
 	bbox = CTFontGetBoundingBox(font);
-	x = (int)(bbox.size.width + 0.99999999);
+	x = (int)(bbox.size.width*2 + 0.99999999);
 
 	fontheight(f, size, &height, &ascent);
 	y = height;
@@ -367,8 +368,10 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 	if(m == nil)
 		return nil;
 	mc = allocmemimage(Rect(0, 0, x+1, y+1), GREY8);
-	if(mc == nil)
+	if(mc == nil){
+		freememimage(m);
 		return nil;
+	}
 	memfillcolor(m, DBlack);
 	memfillcolor(mc, DBlack);
 	fc = malloc((hi+2 - lo) * sizeof fc[0]);
@@ -466,6 +469,7 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 	m1 = allocmemimage(Rect(0, 0, x, y), antialias ? GREY8 : GREY1);
 	memimagedraw(m1, m1->r, m, m->r.min, memopaque, ZP, S);
 	freememimage(m);
+	freememimage(mc);
 
 	sf->name = nil;
 	sf->n = hi+1 - lo;
