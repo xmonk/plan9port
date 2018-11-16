@@ -40,7 +40,7 @@ loadfonts(void)
 		int index;
 		FcPattern *pat = sysfonts->fonts[i];
 
-		if(FcPatternGetString(pat, FC_FULLNAME, 0, &fullname) != FcResultMatch ||
+		if(FcPatternGetString(pat, FC_POSTSCRIPT_NAME, 0, &fullname) != FcResultMatch ||
 		   FcPatternGetString(pat, FC_FILE, 0, &fontfile) != FcResultMatch     ||
 		   FcPatternGetInteger(pat, FC_INDEX, 0, &index) != FcResultMatch)
 			continue;
@@ -77,7 +77,7 @@ load(XFont *f)
 		return;
 	}
 	f->unit = face->units_per_EM;
-	f->height = (int)((face->ascender - face->descender) * 1.2);
+	f->height = (int)((face->ascender - face->descender) * 1.35);
 	f->originy = face->descender; // bbox.yMin (or descender)  is negative, becase the baseline is y-coord 0
 
 	for(charcode=FT_Get_First_Char(face, &glyph_index); glyph_index != 0;
