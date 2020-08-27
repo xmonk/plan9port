@@ -116,6 +116,17 @@ mac2r(CGRect r, int size, int unit)
 }
 
 void
+meminvert(Memimage *m)
+{
+	uchar *p, *ep;
+
+	p = byteaddr(m, m->r.min);
+	ep = p + 4*m->width*Dy(m->r);
+	for(; p < ep; p++)
+		*p ^= 0xff;
+}
+
+void
 loadfonts(void)
 {
 	int i, n;
@@ -343,8 +354,8 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 	int i, height, ascent;
 	Fontchar *fc, *fc0;
 	Memsubfont *sf;
-	CGFloat whitef[] = { 1.0, 1.0 };
-	CGColorRef white;
+	CGFloat blackf[] = { 0.0, 1.0 };
+	CGColorRef black;
 
 	s = c2mac(name);
 	desc = CTFontDescriptorCreateWithNameAndSize(s, size);
@@ -390,7 +401,7 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 	color = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
 	ctxt = CGBitmapContextCreate(byteaddr(mc, mc->r.min), Dx(mc->r), Dy(mc->r), 8,
 		mc->width*sizeof(u32int), color, kCGImageAlphaNone);
-	white = CGColorCreate(color, whitef);
+	black = CGColorCreate(color, blackf);
 	CGColorSpaceRelease(color);
 	if(ctxt == nil) {
 		freememimage(m);
@@ -416,7 +427,7 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 		CGRect r;
 		CGPoint p1;
 		CFStringRef keys[] = { kCTFontAttributeName, kCTForegroundColorAttributeName };
-		CFTypeRef values[] = { font, white };
+		CFTypeRef values[] = { font, black };
 
 		sprint(buf, "%C", (Rune)mapUnicode(name, i));
  		str = c2mac(buf);
@@ -433,7 +444,7 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 		line = CTLineCreateWithAttributedString(attrString);
 		CGContextSetTextPosition(ctxt, 0, y0);
 		r = CTLineGetImageBounds(line, ctxt);
-		memfillcolor(mc, DBlack);
+		memfillcolor(mc, DWhite);
 		CTLineDraw(line, ctxt);
 		CFRelease(line);
 
@@ -453,6 +464,7 @@ mksubfont(XFont *f, char *name, int lo, int hi, int size, int antialias)
 			continue;
 		}
 
+		meminvert(mc);
 		memimagedraw(m, Rect(x, 0, x + p1.x, y), mc, ZP, memopaque, ZP, S);
 		fc->width = p1.x;
 		fc->left = 0;
