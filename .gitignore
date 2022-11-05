@@ -93,6 +93,10 @@ bin/fs/zipfs
 bin/fsize
 bin/getflags
 bin/gif
+bin/Gitfiles
+bin/gitfileget
+bin/gitfileshow
+bin/gitfilestat
 bin/grap
 bin/graph
 bin/grep
@@ -187,6 +191,7 @@ bin/statusbar
 bin/strings
 bin/sum
 bin/svgpic
+bin/tab
 bin/tail
 bin/tar
 bin/tbl
