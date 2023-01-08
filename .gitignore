@@ -16,6 +16,7 @@ bin/acid
 bin/acidtypes
 bin/acme
 bin/acmeevent
+bin/acmesrv
 bin/aescbc
 bin/ascii
 bin/asn12dsa
