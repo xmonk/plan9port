@@ -613,18 +613,13 @@ rpc_resizewindow(Client *c, Rectangle r)
 
 - (void)scrollWheel:(NSEvent*)e
 {
-	NSInteger s;
-	int b;
+	CGFloat s;
 
 	s = [e scrollingDeltaY];
-	if(s > 0)
-		b = 8;
-	else if (s < 0)
-		b = 16;
-	else
-		return;
-
-	[self scrollmouse:b by:s];
+	if(s > 0.0f)
+		[self sendmouse:8];
+	else if (s < 0.0f)
+		[self sendmouse:16];
 }
 
 - (void)keyDown:(NSEvent*)e
