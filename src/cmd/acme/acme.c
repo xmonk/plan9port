@@ -1145,11 +1145,6 @@ iconinit(void)
  * fd here rather than use snarffd
  */
 
-/* rio truncates larges snarf buffers, so this avoids using the
- * service if the string is huge */
-
-#define MAXSNARF 100*1024
-
 void
 acmeputsnarf(void)
 {
@@ -1158,8 +1153,6 @@ acmeputsnarf(void)
 	char *s;
 
 	if(snarfbuf.nc==0)
-		return;
-	if(snarfbuf.nc > MAXSNARF)
 		return;
 
 	fmtstrinit(&f);
