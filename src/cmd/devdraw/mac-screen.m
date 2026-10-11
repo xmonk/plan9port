@@ -626,6 +626,7 @@ rpc_resizewindow(Client *c, Rectangle r)
 		return;
 
 	[self scrollmouse:b by:(NSInteger)ceil(s)];
+	[self sendmouse:0];
 }
 
 - (void)keyDown:(NSEvent*)e
@@ -637,6 +638,23 @@ rpc_resizewindow(Client *c, Rectangle r)
 	[self resetLastInputRect];
 }
 
+// plan9buttons returns the mouse buttons that are down right now,
+// in the Plan 9 encoding: bit 0 is button 1, bit 1 button 2, bit 2 button 3.
+// Cocoa orders the bits left, right, middle, so bits 1 and 2 must be swapped.
+// Bits 3 and up are the fourth and later physical buttons, which Plan 9 has
+// no encoding for: those bits mean the scroll wheel (buttons 4 and 5), so
+// passing them through makes a mouse with side buttons scroll the window.
+// Drop them.
+static uint
+plan9buttons(void)
+{
+	uint b;
+
+	b = (uint)[NSEvent pressedMouseButtons];
+	b = (b&1) | (b&4)>>1 | (b&2)<<1;
+	return mouseswap(b);
+}
+
 - (void)flagsChanged:(NSEvent*)e
 {
 	static NSEventModifierFlags omod;
@@ -646,8 +664,7 @@ rpc_resizewindow(Client *c, Rectangle r)
 	LOG(@"flagsChanged");
 	m = [e modifierFlags];
 
-	b = [NSEvent pressedMouseButtons];
-	b = (b&~6) | (b&4)>>1 | (b&2)<<1;
+	b = plan9buttons();
 	if(b){
 		int x;
 		x = 0;
@@ -736,9 +753,7 @@ int stage = 0;
 	NSUInteger b;
 	NSEventModifierFlags m;
 
-	b = [NSEvent pressedMouseButtons];
-	b = b&~6 | (b&4)>>1 | (b&2)<<1;
-	b = mouseswap(b);
+	b = plan9buttons();
 
 	m = [e modifierFlags];
 	if(b == 1){
